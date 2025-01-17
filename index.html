@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>맞춤 지역 추천</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --secondary: #a855f7;
+      --surface: #ffffff;
+      --background: #f8fafc;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --border: #e5e7eb;
+      --error: #ef4444;
+    }
+    * {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    body {
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 800px; margin: 2rem auto; padding: 2rem 1.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+      animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+      font-size: 2.5rem; font-weight: 800;
+      text-align: center; margin-bottom: 2.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -0.025em;
+    }
+    .input-container {
+      display: grid; gap: 1rem; margin-bottom: 2rem;
+    }
+    .input-group { margin-bottom: 1rem; }
+    .input-label {
+      display: block; font-weight: 600;
+      margin-bottom: 0.5rem; color: var(--text-primary);
+    }
+    input {
+      width: 100%; padding: 1rem 1.25rem;
+      border: 2px solid var(--border);
+      border-radius: 1rem; font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    input:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    }
+    .button {
+      width: 100%; padding: 1rem 1.5rem; border: none;
+      border-radius: 1rem; font-size: 1rem; font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      cursor: pointer; transition: all 0.3s ease; margin-top: 1rem;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(79,70,229,0.2);
+    }
+    .result { display: none; margin-top: 2rem; }
+    .result.show { display: block; animation: slideUp 0.5s ease-out; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .city-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+      gap: 1rem; margin-top: 1rem;
+    }
+    .city-card {
+      background: var(--surface);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+    .city-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    .section-title {
+      font-size: 1.25rem; font-weight: 700;
+      margin: 2rem 0 1rem; color: var(--text-primary);
+      padding-bottom: 0.5rem; border-bottom: 2px solid var(--border);
+    }
+    .info-text {
+      color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;
+    }
+    .error-message {
+      color: var(--error);
+      font-size: 0.9rem; margin-top: 0.5rem;
+      display: none;
+    }
+    /* 추가 */
+    .name-input-group {
+      display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .saju-numbers {
+      display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap;
+    }
+    .saju-badge {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white; padding: 0.5rem 1rem;
+      border-radius: 0.75rem; font-weight: 600;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .saju-badge span {
+      padding: 0.25rem 0.5rem;
+      background: rgba(255,255,255,0.2);
+      border-radius: 0.5rem;
+    }
+    .recommendation-category {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>수비학 맞춤 지역 추천 30</h1>
+<center> <p1> 이름과 생년월일을 입력하면 나와 맞는 지역을 알려드려요.</p></center>
+
+    <div class="input-container">
+      <!-- 성+이름 -->
+      <div class="name-input-group">
+        <div class="input-group">
+          <label class="input-label">성</label>
+          <input type="text" id="lastName" placeholder="성 (예: 김)" maxlength="1" />
+        </div>
+        <div class="input-group">
+          <label class="input-label">이름</label>
+          <input type="text" id="firstName" placeholder="이름 (예: 민수)" maxlength="3" />
+        </div>
+      </div>
+      
+      <!-- 양력 -->
+      <div class="input-group">
+        <label class="input-label">[양력] 생년</label>
+        <input type="number" id="yearSolar" placeholder="예) 1990" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">[양력] 월</label>
+        <input type="number" id="monthSolar" placeholder="1-12" min="1" max="12" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">[양력] 일</label>
+        <input type="number" id="daySolar" placeholder="1-31" min="1" max="31" />
+      </div>
+
+      <!-- 음력 -->
+      <div class="input-group">
+        <label class="input-label">[음력] 생년</label>
+        <input type="number" id="yearLunar" placeholder="예) 1990" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">[음력] 월</label>
+        <input type="number" id="monthLunar" placeholder="1-12" min="1" max="12" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">[음력] 일</label>
+        <input type="number" id="dayLunar" placeholder="1-31" min="1" max="31" />
+      </div>
+    </div>
+
+    <button class="button" onclick="calculateAndRecommend()">지역 추천받기</button>
+    <div id="error" class="error-message"></div>
+
+    <div id="result" class="result"></div>
+  </div>
+</div>
+
+<script>
+// -----------------------
+// (A) 유틸: 숫자합
+// -----------------------
+function sumDigits(num) {
+  let s = String(num), sum=0;
+  for (let c of s) {
+    sum += parseInt(c,10);
+  }
+  return sum;
+}
+
+// -----------------------
+// (B) 사주값 계산
+// -----------------------
+function calcSajuValue(y, m, d) {
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  let total = y + m + d;
+
+  // 제공된 로직
+  if(total < 2000) {
+    let str = String(total).padStart(4,"0");
+    let f2 = parseInt(str.substr(0,2),10);
+    let b2 = parseInt(str.substr(2,2),10);
+    let sf = sumDigits(f2);
+    let sb = sumDigits(b2);
+    let fv = sb;
+    let combine = parseInt(String(sf)+String(sb),10);
+    let sv = sumDigits(combine);
+    return { total, firstVal: fv, secondVal: sv };
+  } else {
+    let lastTwo = total % 100;
+    let fv = (lastTwo>21) ? (lastTwo % 10) : lastTwo;
+    let sv = sumDigits(total);
+    return { total, firstVal: fv, secondVal: sv };
+  }
+}
+
+// -----------------------
+// (C) 이름→사주번호
+// -----------------------
+const nameToNumberMap = {
+   '은': 2,
+
+            // 3번
+            '민': 3, '임': 3, '노': 3, '모': 3, '삼': 3, '묵': 3,
+            '문': 3, '미': 3, '누': 3, '흠': 3, '움': 3, '점': 3,
+            '무': 3, '겸': 3, '림': 3, '매': 3, '맹': 3,
+            '나': 3, '남': 3, '마': 3, '명': 3, '목': 3,
+            '김': 3, '금': 3, '막': 3, '봄': 3, '내': 3,
+            '낭': 3, '담': 3, '첨': 3, '견': 3, '곤': 3,
+
+            // 4번
+            '석': 4, '로': 4, '학': 4, '슬': 4,
+            '라': 4, '종': 4, '루': 4, '일': 4,
+            '식': 4, '래': 4, '례': 4, '록': 4,
+            '소': 4, '리': 4, '말': 4, '란': 4,
+            '숙': 4, '근': 4, '솔': 4, '순': 4,
+            '람': 4, '론': 4,
+
+            // 5번
+            '태': 5, '택': 5, '규': 5, '분': 5, '돔': 5, '던': 5,
+            '만': 5, '엽': 5, '평': 5, '효': 5, '훈': 5, '도': 5,
+            '다': 5, '둔': 5, '령': 5, '봉': 5, '탁': 5, '탄': 5,
+            '대': 5, '덕': 5, '보': 5, '단': 5, '득': 5, '섭': 5,
+            '돈': 5, '두': 5, '갑': 5, '당': 5, '딘': 5, '후': 5,
+            '욱': 5, '팽': 5, '피': 5, '닷': 5, '타': 5, '탐': 5,
+            '파': 5, '판': 5,
+
+            // 6번
+            '정': 6,
+
+            // 7번
+            '최': 7, '동': 7, '차': 7, '추': 7, '건': 7,
+            '채': 7, '화': 7, '좌': 7, '찬': 7, '하': 7, '준': 7,
+            '주': 7, '철': 7, '수': 7, '찰': 7, '춘': 7, '청': 7,
+            '척': 7, '카': 7,
+
+            // 8번
+            '박': 8, '가': 8, '혜': 8, '늘': 8, '호': 8, '해': 8, '예': 8,
+            '중': 8, '강': 8, '율': 8, '용': 8, '송': 8, '응': 8, '사': 8,
+            '병': 8, '열': 8, '비': 8, '양': 8, '백': 8, '승': 8, '옥': 8,
+            '을': 8, '상': 8, '오': 8, '흥': 8, '거': 8, '권': 8, '형': 8,
+            '영': 8, '범': 8, '고': 8, '배': 8, '랑': 8, '빛': 8, '결': 8,
+            '복': 8, '환': 8, '인': 8, '란': 8, '빈': 8, '완': 8, '린': 8,
+            '극': 8, '본': 8, '벼': 8, '의': 8, '검': 8, '황': 8,
+
+            // 9번
+            '순': 9, '서': 9, '선': 9, '여': 9, '녀': 9, '존': 9, '회': 9,
+            '지': 9, '향': 9, '장': 9, '제': 9, '심': 9, '재': 9, '성': 9,
+            '자': 9, '기': 9, '실': 9, '어': 9, '희': 9, '홍': 9, '유': 9,
+            '우': 9, '언': 9, '귀': 9, '설': 9, '길': 9, '행': 9, '휴': 9,
+            '헌': 9, '잠': 9, '허': 9, '갈': 9, '연': 9, '진': 9, '항': 9,
+            '션': 9, '직': 9, '숀': 9,
+
+            // 10번
+            '안': 10, '윤': 10, '원': 10, '전': 10, '온': 10, '한': 10,
+            '손': 10, '련': 10,
+
+            // 11번
+            '현': 11, '경': 11, '신': 11, '염': 11, '키': 11, '창': 11,
+            '간': 11, '천': 11, '세': 11, '감': 11, '품': 11, '위': 11,
+            '균': 11, '총': 11, '휘': 11, '시': 11, '필': 11
+};
+function getCharacterNumber(ch) {
+  return nameToNumberMap[ch] || null;
+}
+function calculateNameNumbers(lastName, firstName) {
+  const ln = getCharacterNumber(lastName);
+  if(!ln) return null;
+  let fnArray=[];
+  for(let c of firstName) {
+    let n = getCharacterNumber(c);
+    if(!n) return null;
+    fnArray.push(n);
+  }
+  return { lastName: ln, firstName: fnArray };
+}
+
+// -----------------------
+// (D) 숫자→초성 + 요소
+// -----------------------
+const locationMap = {
+  2: { consonants: ['ㄱ','ㄴ','ㅇ'], element:'물' },
+  3: { consonants: ['ㄴ','ㄷ','ㅁ','ㅂ'], element:'언덕' },
+  4: { consonants: ['ㄷ','ㅅ'] },
+  5: { consonants: ['ㄷ','ㅂ'] },
+  6: { consonants: ['ㄱ','ㄴ','ㅇ'] },
+  7: { consonants: ['ㄷ','ㅈ'] },
+  8: { consonants: ['ㄱ','ㅂ','ㅅ'], element:'중앙' },
+  9: { consonants: ['ㅅ','ㅇ','ㅈ','ㅎ'], element:'북쪽' },
+  10:{ consonants: ['ㄴ'] },
+  11:{ consonants: ['ㄱ','ㄴ','ㅂ','ㅅ'] }
+};
+
+// -----------------------
+// (E) 초성→도시데이터
+// -----------------------
+const cityData = {
+  'ㄱ': ['강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구',
+         '강서구(부산)','금정구','기장군','군위군(대구)','강화군','계양구','광산구',
+         '가평군','고양시 덕양구','고양시 일산동구','고양시 일산서구',
+         '과천시','광명시','광주시','구리시','군포시','김포시',
+         '강릉시','고성군(강원)','괴산군','공주시','금산군','고창군','군산시','김제시',
+         '강진군','고흥군','곡성군','광양시','구례군','경산시','경주시','고령군',
+         '구미시','군위군(경북)','김천시','거제시','거창군','고성군(경남)','김해시'],
+  'ㄴ': ['노원구','남양주시','남원시','나주시','남해군'],
+  'ㄷ': ['도봉구','동대문구','동작구','동구(부산)','동래구','달서구','달성군','동구(대구)',
+         '동구(인천)','동구(광주)','대덕구','동구(대전)','동구(울산)','당진시','단양군','담양군'],
+  'ㅁ': ['마포구','밀양시','목포시','무안군','무주군'],
+  'ㅂ': ['부산진구','북구(부산)','북구(대구)','부평구','북구(광주)','북구(울산)',
+         '부천시','보은군','보령시','부여군','봉화군'],
+  'ㅅ': ['서대문구','서초구','성동구','성북구','송파구','사상구','사하구','서구(부산)',
+         '수영구','서구(대구)','수성구','서구(인천)',
+         '성남시 분당구','성남시 수정구','성남시 중원구',
+         '수원시 권선구','수원시 영통구','수원시 장안구','수원시 팔달구','시흥시',
+         '삼척시','속초시','서원구','상당구','서산시','서천군','순창군','순천시',
+         '상주시','성주군','사천시','산청군'],
+  'ㅇ': ['양천구','영등포구','용산구','은평구','연수구','울주군',
+         '안산시 단원구','안산시 상록구','안성시','안양시 동안구','안양시 만안구',
+         '양주시','양평군','여주시','연천군','오산시','용인시 기흥구','용인시 수지구',
+         '용인시 처인구','의왕시','의정부시','이천시','양구군','양양군','영월군','원주시',
+         '인제군','옥천군','음성군','아산시','예산군','완주군','익산시','임실군','여수시',
+         '영광군','영암군','완도군','영덕군','영양군','영주시','영천시','예천군','울릉군',
+         '울진군','의성군','양산시'],
+  'ㅈ': ['종로구','중구','중랑구','중구(부산)','중구(대구)','중구(인천)','중구(대전)','중구(울산)',
+         '제주시','증평군','진천군','전주시 덕진구','전주시 완산구','정읍시','진안군',
+         '장성군','장흥군','진도군','진주시','진해구'],
+  'ㅊ': ['철원군','춘천시','청주시 상당구','청주시 서원구','청주시 청원구','청주시 흥덕구','충주시',
+         '천안시 동남구','천안시 서북구','청양군','청도군','청송군','칠곡군','창녕군',
+         '창원시 마산합포구','창원시 마산회원구','창원시 성산구','창원시 의창구','창원시 진해구'],
+  'ㅍ': ['포항시 남구','포항시 북구','평창군'],
+  'ㅎ': ['하남시','화성시','홍천군','화천군','횡성군','홍성군',
+         '해남군','함평군','하동군','함안군','함양군','합천군']
+};
+
+// -----------------------
+// (F) 추천 도시 함수 (가중치 적용, 상위 30개)
+// -----------------------
+function getRecommendedCitiesForNumbers(numbers) {
+  // 1) numbers 배열의 등장 횟수(가중치) 계산
+  const freq = new Map(); // number -> count
+  numbers.forEach(n => {
+    freq.set(n, (freq.get(n)||0)+1);
+  });
+
+  // 2) city별 점수
+  const allCities = new Map();
+  let elements = new Set();
+
+  // 각 distinct 숫자 순회
+  for (let [num, count] of freq.entries()) {
+    const locInfo = locationMap[num];
+    if(!locInfo) continue;
+
+    // 방향/환경(예: 물, 언덕 등)
+    if(locInfo.element){
+      // 여러 번 같은 숫자가 들어오면 element도 중복 표시할지?
+      // 여기서는 단순히 set에 추가
+      elements.add(locInfo.element);
+    }
+
+    // 해당 숫자가 count번 등장 -> city 점수도 count만큼 증가
+    locInfo.consonants.forEach(consonant => {
+      if(cityData[consonant]){
+        cityData[consonant].forEach(city => {
+          const currentScore = allCities.get(city)||0;
+          // 등장 횟수만큼 점수 += count
+          allCities.set(city, currentScore+count);
+        });
+      }
+    });
+  }
+
+  // 3) 점수 순 정렬 -> 상위 30개
+  const sorted = Array.from(allCities.entries())
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,30)
+    .map(([name,score]) => ({name,score}));
+
+  return {
+    cities: sorted,
+    elements: Array.from(elements)
+  };
+}
+
+// -----------------------
+// (G) 메인 로직
+// -----------------------
+function calculateAndRecommend(){
+  const lastName = document.getElementById('lastName').value.trim();
+  const firstName = document.getElementById('firstName').value.trim();
+
+  // 양력
+  const yearSolar = parseInt(document.getElementById('yearSolar').value);
+  const monthSolar = parseInt(document.getElementById('monthSolar').value);
+  const daySolar = parseInt(document.getElementById('daySolar').value);
+
+  // 음력
+  const yearLunar = parseInt(document.getElementById('yearLunar').value);
+  const monthLunar = parseInt(document.getElementById('monthLunar').value);
+  const dayLunar = parseInt(document.getElementById('dayLunar').value);
+
+  const errorDiv = document.getElementById('error');
+  const resultDiv = document.getElementById('result');
+
+  // 초기화
+  errorDiv.style.display='none'; errorDiv.textContent='';
+  resultDiv.classList.remove('show'); resultDiv.innerHTML='';
+
+  // 검증
+  if(!lastName || !firstName){
+    errorDiv.textContent='성과 이름을 입력해주세요.';
+    errorDiv.style.display='block';
+    return;
+  }
+  if(
+    (isNaN(yearSolar)||isNaN(monthSolar)||isNaN(daySolar)) &&
+    (isNaN(yearLunar)||isNaN(monthLunar)||isNaN(dayLunar))
+  ){
+    errorDiv.textContent='양력 또는 음력 생년월일 중 최소 하나를 완전히 입력해주세요.';
+    errorDiv.style.display='block';
+    return;
+  }
+
+  // 이름 사주번호
+  const nameNums = calculateNameNumbers(lastName, firstName);
+  if(!nameNums){
+    errorDiv.textContent='입력된 이름에 사주번호가 없는 글자가 포함되어 있습니다.';
+    errorDiv.style.display='block';
+    return;
+  }
+
+  // 양력 계산
+  let solar = null;
+  if(!isNaN(yearSolar)&&!isNaN(monthSolar)&&!isNaN(daySolar)){
+    solar = calcSajuValue(yearSolar, monthSolar, daySolar);
+  }
+
+  // 음력 계산
+  let lunar = null;
+  if(!isNaN(yearLunar)&&!isNaN(monthLunar)&&!isNaN(dayLunar)){
+    lunar = calcSajuValue(yearLunar, monthLunar, dayLunar);
+  }
+
+  if(!solar && !lunar){
+    errorDiv.textContent='양력 또는 음력 생년월일이 유효하지 않습니다.';
+    errorDiv.style.display='block';
+    return;
+  }
+
+  // 모든 사주번호
+  let allNumbers = [ nameNums.lastName, ...nameNums.firstName ];
+  if(solar) {
+    allNumbers.push(solar.firstVal, solar.secondVal);
+  }
+  if(lunar) {
+    allNumbers.push(lunar.firstVal, lunar.secondVal);
+  }
+
+  // 추천
+  const recommendation = getRecommendedCitiesForNumbers(allNumbers);
+
+  // 화면 표시
+  let solarText = solar
+    ? `<div class="saju-badge">양력: <span>Total=${solar.total}</span> → <span>${solar.firstVal}, ${solar.secondVal}</span></div>`
+    : '<div class="saju-badge">양력 미입력 또는 계산 불가</div>';
+  let lunarText = lunar
+    ? `<div class="saju-badge">음력: <span>Total=${lunar.total}</span> → <span>${lunar.firstVal}, ${lunar.secondVal}</span></div>`
+    : '<div class="saju-badge">음력 미입력 또는 계산 불가</div>';
+
+  resultDiv.innerHTML=`
+    <div class="section-title">사주 번호 분석</div>
+    <div class="saju-numbers">
+      <div class="saju-badge">
+        성: <span>${lastName}</span> → <span>${nameNums.lastName}</span>
+      </div>
+      <div class="saju-badge">
+        이름: <span>${firstName}</span> → <span>${nameNums.firstName.join(', ')}</span>
+      </div>
+      ${solarText}
+      ${lunarText}
+    </div>
+    ${
+      recommendation.elements.length>0
+      ?`
+       <div class="section-title">추천 방향/환경</div>
+       <div class="recommendation-category">
+         ${recommendation.elements.join(', ')}
+       </div>
+       `
+      :''
+    }
+    <div class="section-title">추천 지역</div>
+    <p class="info-text">* 점수가 높을수록 더 잘 맞는 지역입니다. (TOP 30)</p>
+    <div class="city-grid">
+      ${recommendation.cities.map(city=>`
+        <div class="city-card">
+          <div class="city-name">${city.name}</div>
+          <div class="score">적합도: ${Math.min(city.score*20,100)}%</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  resultDiv.classList.add('show');
+}
+</script>
+</body>
+</html>
