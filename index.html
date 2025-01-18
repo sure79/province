@@ -113,12 +113,9 @@
       display: none;
     }
     /* 추가 */
-    .name-input-group {
-      display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;
-      margin-bottom: 1rem;
-    }
     .saju-numbers {
-      display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap;
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      margin: 1rem 0;
     }
     .saju-badge {
       background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -144,21 +141,15 @@
 <div class="container">
   <div class="card">
     <h1>수비학 맞춤 지역 추천 30</h1>
-<center> <p1> 이름과 생년월일을 입력하면 나와 맞는 지역을 알려드려요.</p></center>
+    <center><p>이름을 통째로 입력하면, 각 글자를 분석해 맞춤 지역을 알려드려요.</p></center>
 
     <div class="input-container">
-      <!-- 성+이름 -->
-      <div class="name-input-group">
-        <div class="input-group">
-          <label class="input-label">성</label>
-          <input type="text" id="lastName" placeholder="성 (예: 김)" maxlength="1" />
-        </div>
-        <div class="input-group">
-          <label class="input-label">이름</label>
-          <input type="text" id="firstName" placeholder="이름 (예: 민수)" maxlength="3" />
-        </div>
+      <!-- 전체 이름 -->
+      <div class="input-group">
+        <label class="input-label">이름 (예: 김민수)</label>
+        <input type="text" id="fullName" placeholder="이름 전체를 입력" />
       </div>
-      
+
       <!-- 양력 -->
       <div class="input-group">
         <label class="input-label">[양력] 생년</label>
@@ -234,88 +225,74 @@ function calcSajuValue(y, m, d) {
 }
 
 // -----------------------
-// (C) 이름→사주번호
+// (C) 이름→사주번호 매핑 정보
 // -----------------------
 const nameToNumberMap = {
-   '은': 2,
+  '은': 2,
 
-            // 3번
-            '민': 3, '임': 3, '노': 3, '모': 3, '삼': 3, '묵': 3,
-            '문': 3, '미': 3, '누': 3, '흠': 3, '움': 3, '점': 3,
-            '무': 3, '겸': 3, '림': 3, '매': 3, '맹': 3,
-            '나': 3, '남': 3, '마': 3, '명': 3, '목': 3,
-            '김': 3, '금': 3, '막': 3, '봄': 3, '내': 3,
-            '낭': 3, '담': 3, '첨': 3, '견': 3, '곤': 3,
+  // 3번
+  '민': 3, '임': 3, '노': 3, '모': 3, '삼': 3, '묵': 3,
+  '문': 3, '미': 3, '누': 3, '흠': 3, '움': 3, '점': 3,
+  '무': 3, '겸': 3, '림': 3, '매': 3, '맹': 3,
+  '나': 3, '남': 3, '마': 3, '명': 3, '목': 3,
+  '김': 3, '금': 3, '막': 3, '봄': 3, '내': 3,
+  '낭': 3, '담': 3, '첨': 3, '견': 3, '곤': 3,
 
-            // 4번
-            '석': 4, '로': 4, '학': 4, '슬': 4,
-            '라': 4, '종': 4, '루': 4, '일': 4,
-            '식': 4, '래': 4, '례': 4, '록': 4,
-            '소': 4, '리': 4, '말': 4, '란': 4,
-            '숙': 4, '근': 4, '솔': 4, '순': 4,
-            '람': 4, '론': 4,
+  // 4번
+  '석': 4, '로': 4, '학': 4, '슬': 4,
+  '라': 4, '종': 4, '루': 4, '일': 4,
+  '식': 4, '래': 4, '례': 4, '록': 4,
+  '소': 4, '리': 4, '말': 4, '란': 4,
+  '숙': 4, '근': 4, '솔': 4, '순': 4,
+  '람': 4, '론': 4,
 
-            // 5번
-            '태': 5, '택': 5, '규': 5, '분': 5, '돔': 5, '던': 5,
-            '만': 5, '엽': 5, '평': 5, '효': 5, '훈': 5, '도': 5,
-            '다': 5, '둔': 5, '령': 5, '봉': 5, '탁': 5, '탄': 5,
-            '대': 5, '덕': 5, '보': 5, '단': 5, '득': 5, '섭': 5,
-            '돈': 5, '두': 5, '갑': 5, '당': 5, '딘': 5, '후': 5,
-            '욱': 5, '팽': 5, '피': 5, '닷': 5, '타': 5, '탐': 5,
-            '파': 5, '판': 5,
+  // 5번
+  '태': 5, '택': 5, '규': 5, '분': 5, '돔': 5, '던': 5,
+  '만': 5, '엽': 5, '평': 5, '효': 5, '훈': 5, '도': 5,
+  '다': 5, '둔': 5, '령': 5, '봉': 5, '탁': 5, '탄': 5,
+  '대': 5, '덕': 5, '보': 5, '단': 5, '득': 5, '섭': 5,
+  '돈': 5, '두': 5, '갑': 5, '당': 5, '딘': 5, '후': 5,
+  '욱': 5, '팽': 5, '피': 5, '닷': 5, '타': 5, '탐': 5,
+  '파': 5, '판': 5,
 
-            // 6번
-            '정': 6,
+  // 6번
+  '정': 6,
 
-            // 7번
-            '최': 7, '동': 7, '차': 7, '추': 7, '건': 7,
-            '채': 7, '화': 7, '좌': 7, '찬': 7, '하': 7, '준': 7,
-            '주': 7, '철': 7, '수': 7, '찰': 7, '춘': 7, '청': 7,
-            '척': 7, '카': 7,
+  // 7번
+  '최': 7, '동': 7, '차': 7, '추': 7, '건': 7,
+  '채': 7, '화': 7, '좌': 7, '찬': 7, '하': 7, '준': 7,
+  '주': 7, '철': 7, '수': 7, '찰': 7, '춘': 7, '청': 7,
+  '척': 7, '카': 7,
 
-            // 8번
-            '박': 8, '가': 8, '혜': 8, '늘': 8, '호': 8, '해': 8, '예': 8,
-            '중': 8, '강': 8, '율': 8, '용': 8, '송': 8, '응': 8, '사': 8,
-            '병': 8, '열': 8, '비': 8, '양': 8, '백': 8, '승': 8, '옥': 8,
-            '을': 8, '상': 8, '오': 8, '흥': 8, '거': 8, '권': 8, '형': 8,
-            '영': 8, '범': 8, '고': 8, '배': 8, '랑': 8, '빛': 8, '결': 8,
-            '복': 8, '환': 8, '인': 8, '란': 8, '빈': 8, '완': 8, '린': 8,
-            '극': 8, '본': 8, '벼': 8, '의': 8, '검': 8, '황': 8,
+  // 8번
+  '박': 8, '가': 8, '혜': 8, '늘': 8, '호': 8, '해': 8, '예': 8,
+  '중': 8, '강': 8, '율': 8, '용': 8, '송': 8, '응': 8, '사': 8,
+  '병': 8, '열': 8, '비': 8, '양': 8, '백': 8, '승': 8, '옥': 8,
+  '을': 8, '상': 8, '오': 8, '흥': 8, '거': 8, '권': 8, '형': 8,
+  '영': 8, '범': 8, '고': 8, '배': 8, '랑': 8, '빛': 8, '결': 8,
+  '복': 8, '환': 8, '인': 8, '란': 8, '빈': 8, '완': 8, '린': 8,
+  '극': 8, '본': 8, '벼': 8, '의': 8, '검': 8, '황': 8,
 
-            // 9번
-            '순': 9, '서': 9, '선': 9, '여': 9, '녀': 9, '존': 9, '회': 9,
-            '지': 9, '향': 9, '장': 9, '제': 9, '심': 9, '재': 9, '성': 9,
-            '자': 9, '기': 9, '실': 9, '어': 9, '희': 9, '홍': 9, '유': 9,
-            '우': 9, '언': 9, '귀': 9, '설': 9, '길': 9, '행': 9, '휴': 9,
-            '헌': 9, '잠': 9, '허': 9, '갈': 9, '연': 9, '진': 9, '항': 9,
-            '션': 9, '직': 9, '숀': 9,
+  // 9번
+  '순': 9, '서': 9, '선': 9, '여': 9, '녀': 9, '존': 9, '회': 9,
+  '지': 9, '향': 9, '장': 9, '제': 9, '심': 9, '재': 9, '성': 9,
+  '자': 9, '기': 9, '실': 9, '어': 9, '희': 9, '홍': 9, '유': 9,
+  '우': 9, '언': 9, '귀': 9, '설': 9, '길': 9, '행': 9, '휴': 9,
+  '헌': 9, '잠': 9, '허': 9, '갈': 9, '연': 9, '진': 9, '항': 9,
+  '션': 9, '직': 9, '숀': 9, '요': 9, '이': 9, '주': 9, '철' : 9, '류': 9,
 
-            // 10번
-            '안': 10, '윤': 10, '원': 10, '전': 10, '온': 10, '한': 10,
-            '손': 10, '련': 10,
+  // 10번
+  '안': 10, '윤': 10, '원': 10, '전': 10, '온': 10, '한': 10,
+  '손': 10, '련': 10,
 
-            // 11번
-            '현': 11, '경': 11, '신': 11, '염': 11, '키': 11, '창': 11,
-            '간': 11, '천': 11, '세': 11, '감': 11, '품': 11, '위': 11,
-            '균': 11, '총': 11, '휘': 11, '시': 11, '필': 11
+  // 11번
+  '현': 11, '경': 11, '신': 11, '염': 11, '키': 11, '창': 11,
+  '간': 11, '천': 11, '세': 11, '감': 11, '품': 11, '위': 11,
+  '균': 11, '총': 11, '휘': 11, '시': 11, '필': 11
 };
-function getCharacterNumber(ch) {
-  return nameToNumberMap[ch] || null;
-}
-function calculateNameNumbers(lastName, firstName) {
-  const ln = getCharacterNumber(lastName);
-  if(!ln) return null;
-  let fnArray=[];
-  for(let c of firstName) {
-    let n = getCharacterNumber(c);
-    if(!n) return null;
-    fnArray.push(n);
-  }
-  return { lastName: ln, firstName: fnArray };
-}
 
 // -----------------------
-// (D) 숫자→초성 + 요소
+// (D) 숫자→초성 + 요소 매핑
 // -----------------------
 const locationMap = {
   2: { consonants: ['ㄱ','ㄴ','ㅇ'], element:'물' },
@@ -388,12 +365,10 @@ function getRecommendedCitiesForNumbers(numbers) {
   // 각 distinct 숫자 순회
   for (let [num, count] of freq.entries()) {
     const locInfo = locationMap[num];
-    if(!locInfo) continue;
+    if(!locInfo) continue; // 매핑에 없는 숫자이면 무시
 
     // 방향/환경(예: 물, 언덕 등)
     if(locInfo.element){
-      // 여러 번 같은 숫자가 들어오면 element도 중복 표시할지?
-      // 여기서는 단순히 set에 추가
       elements.add(locInfo.element);
     }
 
@@ -402,7 +377,6 @@ function getRecommendedCitiesForNumbers(numbers) {
       if(cityData[consonant]){
         cityData[consonant].forEach(city => {
           const currentScore = allCities.get(city)||0;
-          // 등장 횟수만큼 점수 += count
           allCities.set(city, currentScore+count);
         });
       }
@@ -425,8 +399,7 @@ function getRecommendedCitiesForNumbers(numbers) {
 // (G) 메인 로직
 // -----------------------
 function calculateAndRecommend(){
-  const lastName = document.getElementById('lastName').value.trim();
-  const firstName = document.getElementById('firstName').value.trim();
+  const fullName = document.getElementById('fullName').value.trim();
 
   // 양력
   const yearSolar = parseInt(document.getElementById('yearSolar').value);
@@ -442,15 +415,37 @@ function calculateAndRecommend(){
   const resultDiv = document.getElementById('result');
 
   // 초기화
-  errorDiv.style.display='none'; errorDiv.textContent='';
-  resultDiv.classList.remove('show'); resultDiv.innerHTML='';
+  errorDiv.style.display='none'; 
+  errorDiv.textContent='';
+  resultDiv.classList.remove('show'); 
+  resultDiv.innerHTML='';
 
-  // 검증
-  if(!lastName || !firstName){
-    errorDiv.textContent='성과 이름을 입력해주세요.';
+  // (1) 이름 검증
+  if(!fullName){
+    errorDiv.textContent='이름을 입력해주세요.';
     errorDiv.style.display='block';
     return;
   }
+
+  // (2) 이름 사주번호(부분 매핑)
+  //     매핑된 숫자만 따로 추출하여 최종 추천에 활용
+  const chars = fullName.split('');
+  let mappedNumbers = [];
+  let mappedNameHTML = chars.map(ch => {
+    if(nameToNumberMap[ch]){
+      mappedNumbers.push(nameToNumberMap[ch]);
+      return `<div class="saju-badge">${ch} → <span>${nameToNumberMap[ch]}</span></div>`;
+    } else {
+      return `<div class="saju-badge">${ch} → <span>번호가 없는 글자</span></div>`;
+    }
+  }).join('');
+
+  // 만약 매핑된 숫자가 0개라면(=이름 글자 전부 매핑 실패)
+  // 굳이 에러로 처리하지 않고, 숫자 없이도 그대로 진행 가능하도록
+  // 원한다면 에러 처리 가능: if(!mappedNumbers.length) {...}
+
+  // (3) 양력 혹은 음력 중 최소 하나는 완전히 입력되었는지 검증
+  //     둘 다 비어 있으면 에러
   if(
     (isNaN(yearSolar)||isNaN(monthSolar)||isNaN(daySolar)) &&
     (isNaN(yearLunar)||isNaN(monthLunar)||isNaN(dayLunar))
@@ -460,34 +455,26 @@ function calculateAndRecommend(){
     return;
   }
 
-  // 이름 사주번호
-  const nameNums = calculateNameNumbers(lastName, firstName);
-  if(!nameNums){
-    errorDiv.textContent='입력된 이름에 사주번호가 없는 글자가 포함되어 있습니다.';
-    errorDiv.style.display='block';
-    return;
-  }
-
-  // 양력 계산
+  // (4) 양력·음력 계산
   let solar = null;
-  if(!isNaN(yearSolar)&&!isNaN(monthSolar)&&!isNaN(daySolar)){
+  if(!isNaN(yearSolar) && !isNaN(monthSolar) && !isNaN(daySolar)){
     solar = calcSajuValue(yearSolar, monthSolar, daySolar);
   }
-
-  // 음력 계산
   let lunar = null;
-  if(!isNaN(yearLunar)&&!isNaN(monthLunar)&&!isNaN(dayLunar)){
+  if(!isNaN(yearLunar) && !isNaN(monthLunar) && !isNaN(dayLunar)){
     lunar = calcSajuValue(yearLunar, monthLunar, dayLunar);
   }
-
   if(!solar && !lunar){
     errorDiv.textContent='양력 또는 음력 생년월일이 유효하지 않습니다.';
     errorDiv.style.display='block';
     return;
   }
 
-  // 모든 사주번호
-  let allNumbers = [ nameNums.lastName, ...nameNums.firstName ];
+  // (5) 최종 추천 계산용 배열
+  //     - 이름에서 유효하게 매핑된 숫자
+  //     - 양력 계산 결과 (있는 경우)
+  //     - 음력 계산 결과 (있는 경우)
+  let allNumbers = [...mappedNumbers];
   if(solar) {
     allNumbers.push(solar.firstVal, solar.secondVal);
   }
@@ -495,10 +482,10 @@ function calculateAndRecommend(){
     allNumbers.push(lunar.firstVal, lunar.secondVal);
   }
 
-  // 추천
+  // (6) 추천
   const recommendation = getRecommendedCitiesForNumbers(allNumbers);
 
-  // 화면 표시
+  // (7) 결과 화면 표시
   let solarText = solar
     ? `<div class="saju-badge">양력: <span>Total=${solar.total}</span> → <span>${solar.firstVal}, ${solar.secondVal}</span></div>`
     : '<div class="saju-badge">양력 미입력 또는 계산 불가</div>';
@@ -507,17 +494,17 @@ function calculateAndRecommend(){
     : '<div class="saju-badge">음력 미입력 또는 계산 불가</div>';
 
   resultDiv.innerHTML=`
+    <div class="section-title">이름 글자별 매핑</div>
+    <div class="saju-numbers">
+      ${mappedNameHTML}
+    </div>
+
     <div class="section-title">사주 번호 분석</div>
     <div class="saju-numbers">
-      <div class="saju-badge">
-        성: <span>${lastName}</span> → <span>${nameNums.lastName}</span>
-      </div>
-      <div class="saju-badge">
-        이름: <span>${firstName}</span> → <span>${nameNums.firstName.join(', ')}</span>
-      </div>
       ${solarText}
       ${lunarText}
     </div>
+
     ${
       recommendation.elements.length>0
       ?`
@@ -528,6 +515,7 @@ function calculateAndRecommend(){
        `
       :''
     }
+
     <div class="section-title">추천 지역</div>
     <p class="info-text">* 점수가 높을수록 더 잘 맞는 지역입니다. (TOP 30)</p>
     <div class="city-grid">
