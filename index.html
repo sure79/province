@@ -2,8 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>맞춤 지역 추천</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>수비학 + 전국 지도 (Google Maps)</title>
+
   <style>
     :root {
       --primary: #4f46e5;
@@ -11,7 +12,6 @@
       --surface: #ffffff;
       --background: #f8fafc;
       --text-primary: #1f2937;
-      --text-secondary: #6b7280;
       --border: #e5e7eb;
       --error: #ef4444;
     }
@@ -41,15 +41,13 @@
       to { opacity: 1; transform: translateY(0); }
     }
     h1 {
-      font-size: 2.5rem; font-weight: 800;
-      text-align: center; margin-bottom: 2.5rem;
+      font-size: 2rem; font-weight: 800;
+      text-align: center; margin-bottom: 2rem;
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       letter-spacing: -0.025em;
     }
-    .input-container {
-      display: grid; gap: 1rem; margin-bottom: 2rem;
-    }
+    .input-container { display: grid; gap: 1rem; margin-bottom: 2rem; }
     .input-group { margin-bottom: 1rem; }
     .input-label {
       display: block; font-weight: 600;
@@ -76,43 +74,22 @@
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(79,70,229,0.2);
     }
+    .error-message {
+      color: var(--error);
+      font-size: 0.9rem; margin-top: 0.5rem;
+      display: none;
+    }
     .result { display: none; margin-top: 2rem; }
     .result.show { display: block; animation: slideUp 0.5s ease-out; }
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .city-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
-      gap: 1rem; margin-top: 1rem;
-    }
-    .city-card {
-      background: var(--surface);
-      padding: 1.5rem;
-      border-radius: 1rem;
-      border: 1px solid var(--border);
-      transition: all 0.3s ease;
-      text-align: center;
-    }
-    .city-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
     .section-title {
-      font-size: 1.25rem; font-weight: 700;
+      font-size: 1.2rem; font-weight: 700;
       margin: 2rem 0 1rem; color: var(--text-primary);
       padding-bottom: 0.5rem; border-bottom: 2px solid var(--border);
     }
-    .info-text {
-      color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;
-    }
-    .error-message {
-      color: var(--error);
-      font-size: 0.9rem; margin-top: 0.5rem;
-      display: none;
-    }
-    /* 추가 */
     .saju-numbers {
       display: flex; flex-wrap: wrap; gap: 1rem;
       margin: 1rem 0;
@@ -128,29 +105,31 @@
       background: rgba(255,255,255,0.2);
       border-radius: 0.5rem;
     }
-    .recommendation-category {
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      background: #f8fafc;
+    /* 지도 컨테이너 */
+    #map {
+      width: 100%;
+      height: 600px;
+      margin-top: 2rem;
+      border: 2px solid var(--border);
       border-radius: 1rem;
-      border: 1px solid var(--border);
     }
   </style>
 </head>
 <body>
 <div class="container">
   <div class="card">
-    <h1>수비학 맞춤 지역 추천 30</h1>
-    <center><p>이름을 통째로 입력하면, 각 글자를 분석해 맞춤 지역을 알려드려요.</p></center>
+    <h1>수비학 + 전국 지도 (Google Maps)</h1>
+    <p>이름과 생년월일(양/음력)을 입력하면, 추천 지역을 지도에서 확인할 수 있습니다.</p>
 
+    <!-- 입력 폼 -->
     <div class="input-container">
-      <!-- 전체 이름 -->
+      <!-- 이름 -->
       <div class="input-group">
         <label class="input-label">이름 (예: 김민수)</label>
         <input type="text" id="fullName" placeholder="이름 전체를 입력" />
       </div>
 
-      <!-- 양력 -->
+      <!-- 양력 생년월일 -->
       <div class="input-group">
         <label class="input-label">[양력] 생년</label>
         <input type="number" id="yearSolar" placeholder="예) 1990" />
@@ -164,7 +143,7 @@
         <input type="number" id="daySolar" placeholder="1-31" min="1" max="31" />
       </div>
 
-      <!-- 음력 -->
+      <!-- 음력 생년월일 -->
       <div class="input-group">
         <label class="input-label">[음력] 생년</label>
         <input type="number" id="yearLunar" placeholder="예) 1990" />
@@ -181,15 +160,480 @@
 
     <button class="button" onclick="calculateAndRecommend()">지역 추천받기</button>
     <div id="error" class="error-message"></div>
-
     <div id="result" class="result"></div>
   </div>
+
+  <!-- 지도 영역 -->
+  <div id="map"></div>
 </div>
 
+<!-- (1) Google Maps JavaScript API 로드 -->
+<!-- ★★★ 아래 YOUR_API_KEY에 실제 키를 넣으세요 ★★★ -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGgGcrvx0xwrHMGYNQ7v2tu7G5suzuqJE&callback=initMap"
+  async
+  defer
+></script>
+
 <script>
-// -----------------------
-// (A) 유틸: 숫자합
-// -----------------------
+// -------------------------------------------
+// (A) 전역 변수
+// -------------------------------------------
+let map;                   // 구글 지도 객체
+let markers = [];          // 마커 목록 (초기화용)
+let recommendation = {     // 추천 결과 (도시 점수, 요소 등)
+  cities: [],
+  elements: []
+};
+
+// -------------------------------------------
+// (B) 지도 초기화 함수 (callback=initMap)
+// -------------------------------------------
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 36.4, lng: 127.8 }, // 한국 대략 중부
+    zoom: 7
+  });
+
+  // (1) GeoJSON 불러오기 (시·군·구 경계)
+  //     실제 경로로 수정하세요 (같은 폴더면 "korea_sigu.geojson")
+  map.data.loadGeoJson("korea_sigu.geojson");
+
+  // (2) 기본 스타일
+  map.data.setStyle(feature => {
+    const name = feature.getProperty('SIG_KOR_NM');
+    const score = getScoreForCity(name);
+    return {
+      fillColor: getColorByScore(score),
+      fillOpacity: score > 0 ? 0.7 : 0.3,
+      strokeColor: '#fff',
+      strokeWeight: 1
+    };
+  });
+
+  // (3) 마우스오버 시 하이라이트
+  map.data.addListener('mouseover', function(event) {
+    map.data.overrideStyle(event.feature, { fillOpacity: 0.9 });
+  });
+  map.data.addListener('mouseout', function(event) {
+    const name = event.feature.getProperty('SIG_KOR_NM');
+    const score = getScoreForCity(name);
+    map.data.overrideStyle(event.feature, {
+      fillColor: getColorByScore(score),
+      fillOpacity: score > 0 ? 0.7 : 0.3
+    });
+  });
+
+  // (4) 클릭 시 팝업
+  map.data.addListener('click', function(event) {
+    const name = event.feature.getProperty('SIG_KOR_NM');
+    const score = getScoreForCity(name);
+    const percent = Math.min(score * 20, 100);
+
+    new google.maps.InfoWindow({
+      content: `
+        <div style="font-size:1rem;">
+          <b>${name}</b><br/>
+          점수: ${score}<br/>
+          적합도: ${percent}%
+        </div>
+      `,
+      position: event.latLng
+    }).open(map);
+  });
+}
+
+// -------------------------------------------
+// (C) 도시별 점수 조회 함수
+// -------------------------------------------
+function getScoreForCity(cityName) {
+  let found = recommendation.cities.find(c => c.name === cityName);
+  return found ? found.score : 0;
+}
+
+// -------------------------------------------
+// (D) 점수 → 색상
+// -------------------------------------------
+function getColorByScore(score) {
+  // 예: score=0이면 회색
+  if(score <= 0) return '#ccc';
+  // 점수 1~5 범위 가정
+  if(score > 4) return '#B10026';
+  if(score > 3) return '#E31A1C';
+  if(score > 2) return '#FC4E2A';
+  if(score > 1) return '#FD8D3C';
+  return '#FEB24C';
+}
+
+// -------------------------------------------
+// (E) 지도 전체의 색상 업데이트 함수
+//     + 마커도 다시 찍기
+// -------------------------------------------
+function updateMapColors() {
+  if(!map) return; // 혹시 map이 아직 준비 안 된 경우 대비
+
+  // (1) 폴리곤 색상 갱신
+  map.data.setStyle(feature => {
+    const name = feature.getProperty('SIG_KOR_NM');
+    const score = getScoreForCity(name);
+    return {
+      fillColor: getColorByScore(score),
+      fillOpacity: score > 0 ? 0.7 : 0.3,
+      strokeColor: '#fff',
+      strokeWeight: 1
+    };
+  });
+
+  // (2) 마커도 재생성
+  placeMarkers();
+}
+
+// -------------------------------------------
+// (F) 특정 도시를 지도에 마커로 표시하기 위한 좌표
+// ★ 실제로는 더 많은 데이터를 추가하거나,
+//   Google Geocoding API로 주소→좌표 변환해서 써야 합니다.
+// -------------------------------------------
+const cityCenters = {
+  // ---------------------------------------------------------------
+  // 1) 'ㄱ' 그룹
+  // ---------------------------------------------------------------
+  "서울 강남구": { lat: 37.5172, lng: 127.0473 },
+  "서울 강동구": { lat: 37.5459, lng: 127.1477 },
+  "서울 강북구": { lat: 37.6396, lng: 127.0257 },
+  "서울 강서구": { lat: 37.550919, lng: 126.849574 },
+  "서울 관악구": { lat: 37.4783, lng: 126.9515 },
+  "서울 광진구": { lat: 37.5384, lng: 127.0822 },
+  "서울 구로구": { lat: 37.4955, lng: 126.8875 },
+  "서울 금천구": { lat: 37.4565, lng: 126.8959 },
+
+  "부산 강서구": { lat: 35.212301, lng: 128.980297 },
+  "부산 금정구": { lat: 35.2424, lng: 129.0896 },
+  "부산 기장군": { lat: 35.2446, lng: 129.2223 },
+
+  "대구 군위군": { lat: 36.2426, lng: 128.5720 },
+  "경북 군위군": { lat: 36.2426, lng: 128.5720 }, // 행정통합 전후 동일(실제 위치 같음)
+
+  "인천 강화군": { lat: 37.7463, lng: 126.4850 },
+  "인천 계양구": { lat: 37.5380, lng: 126.7312 },
+  "광주 광산구": { lat: 35.1399, lng: 126.7939 },
+
+  "경기 가평군": { lat: 37.8315, lng: 127.5090 },
+  "경기 고양시 덕양구": { lat: 37.637304, lng: 126.832889 },
+  "경기 고양시 일산동구": { lat: 37.6638, lng: 126.7686 },
+  "경기 고양시 일산서구": { lat: 37.6810, lng: 126.7479 },
+  "경기 과천시": { lat: 37.4292, lng: 126.9873 },
+  "경기 광명시": { lat: 37.4780, lng: 126.8643 },
+  "경기 광주시": { lat: 37.4170, lng: 127.2606 },
+  "경기 구리시": { lat: 37.5943, lng: 127.1297 },
+  "경기 군포시": { lat: 37.3616, lng: 126.9358 },
+  "경기 김포시": { lat: 37.6154, lng: 126.7158 },
+
+  "강원 강릉시": { lat: 37.7518, lng: 128.8760 },
+  "강원 고성군": { lat: 38.3795, lng: 128.4679 },
+
+  "충북 괴산군": { lat: 36.8005, lng: 127.7940 },
+  "충남 공주시": { lat: 36.4467, lng: 127.1190 },
+  "충남 금산군": { lat: 36.1084, lng: 127.4889 },
+
+  "전북 고창군": { lat: 35.4351, lng: 126.7018 },
+  "전북 군산시": { lat: 35.9674, lng: 126.7365 },
+  "전북 김제시": { lat: 35.8032, lng: 126.8800 },
+
+  "전남 강진군": { lat: 34.6426, lng: 126.7698 },
+  "전남 고흥군": { lat: 34.6019, lng: 127.2817 },
+  "전남 곡성군": { lat: 35.2812, lng: 127.2910 },
+  "전남 광양시": { lat: 34.9407, lng: 127.6955 },
+  "전남 구례군": { lat: 35.2024, lng: 127.4623 },
+
+  "경북 경산시": { lat: 35.8259, lng: 128.7415 },
+  "경북 경주시": { lat: 35.8562, lng: 129.2247 },
+  "경북 고령군": { lat: 35.7270, lng: 128.2620 },
+  "경북 구미시": { lat: 36.1195, lng: 128.3446 },
+
+  "경남 거제시": { lat: 34.8805, lng: 128.6217 },
+  "경남 거창군": { lat: 35.6863, lng: 127.9093 },
+  "경남 고성군": { lat: 34.9723, lng: 128.3224 },
+  "경남 김해시": { lat: 35.228233, lng: 128.889175 },
+
+  // ---------------------------------------------------------------
+  // 2) 'ㄴ' 그룹
+  // ---------------------------------------------------------------
+  "서울 노원구": { lat: 37.6543, lng: 127.0563 },
+  "경기 남양주시": { lat: 37.6360, lng: 127.2165 },
+  "전북 남원시": { lat: 35.4164, lng: 127.3900 },
+  "전남 나주시": { lat: 35.0152, lng: 126.7100 },
+  "경남 남해군": { lat: 34.8370, lng: 128.0164 },
+
+  // ---------------------------------------------------------------
+  // 3) 'ㄷ' 그룹
+  // ---------------------------------------------------------------
+  "서울 도봉구": { lat: 37.6659, lng: 127.0318 },
+  "서울 동대문구": { lat: 37.5744, lng: 127.0396 },
+  "서울 동작구": { lat: 37.5124, lng: 126.9394 },
+
+  "부산 동구": { lat: 35.1296, lng: 129.0454 },
+  "부산 동래구": { lat: 35.2054, lng: 129.0810 },
+  "대구 동구": { lat: 35.8856, lng: 128.6355 },
+  "대구 달서구": { lat: 35.8298, lng: 128.5321 },
+  "대구 달성군": { lat: 35.7747, lng: 128.4316 },
+
+  "인천 동구": { lat: 37.4738, lng: 126.6414 },
+  "광주 동구": { lat: 35.1460, lng: 126.9238 },
+  "대전 동구": { lat: 36.3300, lng: 127.4548 },
+  "울산 동구": { lat: 35.5048, lng: 129.4181 },
+
+  "충남 당진시": { lat: 36.8892, lng: 126.6317 },
+  "충북 단양군": { lat: 36.9838, lng: 128.3656 },
+  "전남 담양군": { lat: 35.3214, lng: 126.9998 },
+
+  // ---------------------------------------------------------------
+  // 4) 'ㅁ' 그룹
+  // ---------------------------------------------------------------
+  "서울 마포구": { lat: 37.5638, lng: 126.9084 },
+  "경남 밀양시": { lat: 35.5036, lng: 128.7464 },
+  "전남 목포시": { lat: 34.8118, lng: 126.3920 },
+  "전남 무안군": { lat: 34.9907, lng: 126.4786 },
+  "전북 무주군": { lat: 36.0065, lng: 127.6602 },
+
+  // ---------------------------------------------------------------
+  // 5) 'ㅂ' 그룹
+  // ---------------------------------------------------------------
+  "부산 부산진구": { lat: 35.1627, lng: 129.0516 },
+  "부산 북구": { lat: 35.1979, lng: 128.9905 },
+  "인천 부평구": { lat: 37.5080, lng: 126.7213 },
+  "대구 북구": { lat: 35.8856, lng: 128.5827 },
+  "광주 북구": { lat: 35.1741, lng: 126.9118 },
+  "울산 북구": { lat: 35.5820, lng: 129.3615 },
+
+  "충북 보은군": { lat: 36.4897, lng: 127.7292 },
+  "충남 보령시": { lat: 36.3337, lng: 126.6120 },
+  "충남 부여군": { lat: 36.2754, lng: 126.9093 },
+  "경북 봉화군": { lat: 36.8936, lng: 128.7323 },
+
+  // ---------------------------------------------------------------
+  // 6) 'ㅅ' 그룹
+  // ---------------------------------------------------------------
+  "서울 서대문구": { lat: 37.5791, lng: 126.9368 },
+  "서울 서초구": { lat: 37.4836, lng: 127.0326 },
+  "서울 성동구": { lat: 37.5633, lng: 127.0364 },
+  "서울 성북구": { lat: 37.5894, lng: 127.0167 },
+  "서울 송파구": { lat: 37.505077, lng: 127.114202 },
+
+  "부산 사상구": { lat: 35.1527, lng: 128.9837 },
+  "부산 사하구": { lat: 35.1043, lng: 128.9772 },
+  "부산 서구": { lat: 35.0970, lng: 129.0249 },
+
+  "대구 서구": { lat: 35.8719, lng: 128.5592 },
+  "인천 서구": { lat: 37.5454, lng: 126.6760 },
+  "대구 수성구": { lat: 35.860154, lng: 128.630939 },
+
+  "경기 성남시 분당구": { lat: 37.3825, lng: 127.1180 },
+  "경기 성남시 수정구": { lat: 37.4458, lng: 127.1435 },
+  "경기 성남시 중원구": { lat: 37.4424, lng: 127.1616 },
+
+  "경기 수원시 권선구": { lat: 37.2638, lng: 126.9757 },
+  "경기 수원시 영통구": { lat: 37.2597, lng: 127.0467 },
+  "경기 수원시 장안구": { lat: 37.3055, lng: 127.0104 },
+  "경기 수원시 팔달구": { lat: 37.2779, lng: 127.0190 },
+  "경기 시흥시": { lat: 37.3802, lng: 126.8022 },
+
+  "강원 삼척시": { lat: 37.4498, lng: 129.1655 },
+  "강원 속초시": { lat: 38.2070, lng: 128.5918 },
+
+  // 청주 ‘서원구/상당구’는 공식 행정동 기반 좌표가 다소 다릅니다. 임의 중심값:
+  "충북 서원구": { lat: 36.6251, lng: 127.4498 },
+  "충북 상당구": { lat: 36.6350, lng: 127.4913 },
+
+  "충남 서산시": { lat: 36.7850, lng: 126.4504 },
+  "충남 서천군": { lat: 36.0808, lng: 126.6912 },
+
+  "전북 순창군": { lat: 35.3748, lng: 127.1445 },
+  "전남 순천시": { lat: 34.950727, lng: 127.487179 },
+
+  "경북 상주시": { lat: 36.4104, lng: 128.1598 },
+  "경북 성주군": { lat: 35.9193, lng: 128.2868 },
+  "경남 사천시": { lat: 35.0039, lng: 128.0640 },
+  "경남 산청군": { lat: 35.4158, lng: 127.8732 },
+
+  // ---------------------------------------------------------------
+  // 7) 'ㅇ' 그룹
+  // ---------------------------------------------------------------
+  "서울 양천구": { lat: 37.5162, lng: 126.8663 },
+  "서울 영등포구": { lat: 37.5260, lng: 126.8963 },
+  "서울 용산구": { lat: 37.5324, lng: 126.9902 },
+  "서울 은평구": { lat: 37.6029, lng: 126.9291 },
+
+  "인천 연수구": { lat: 37.4184, lng: 126.6760 },
+  "울산 울주군": { lat: 35.5224, lng: 129.2422 },
+
+  "경기 안산시 단원구": { lat: 37.3230, lng: 126.8224 },
+  "경기 안산시 상록구": { lat: 37.2869, lng: 126.8363 },
+  "경기 안성시": { lat: 37.0081, lng: 127.2793 },
+  "경기 안양시 동안구": { lat: 37.3943, lng: 126.9534 },
+  "경기 안양시 만안구": { lat: 37.3891, lng: 126.9284 },
+
+  "경기 양주시": { lat: 37.7850, lng: 127.0455 },
+  "경기 양평군": { lat: 37.4918, lng: 127.4872 },
+  "경기 여주시": { lat: 37.2989, lng: 127.6318 },
+  "경기 연천군": { lat: 38.0967, lng: 127.0745 },
+  "경기 오산시": { lat: 37.1498, lng: 127.0775 },
+  "경기 용인시 기흥구": { lat: 37.2745, lng: 127.1082 },
+  "경기 용인시 수지구": { lat: 37.3227, lng: 127.0951 },
+  "경기 용인시 처인구": { lat: 37.2373, lng: 127.1775 },
+  "경기 의왕시": { lat: 37.3440, lng: 126.9681 },
+  "경기 의정부시": { lat: 37.7380, lng: 127.0333 },
+  "경기 이천시": { lat: 37.2726, lng: 127.4350 },
+
+  "강원 양구군": { lat: 38.1084, lng: 127.9890 },
+  "강원 양양군": { lat: 38.0754, lng: 128.6194 },
+  "강원 영월군": { lat: 37.1835, lng: 128.4610 },
+  "강원 원주시": { lat: 37.3422, lng: 127.9190 },
+  "강원 인제군": { lat: 38.0694, lng: 128.1702 },
+
+  "충북 옥천군": { lat: 36.3065, lng: 127.5804 },
+  "충북 음성군": { lat: 36.9289, lng: 127.6908 },
+
+  "충남 아산시": { lat: 36.7926, lng: 127.0025 },
+  "충남 예산군": { lat: 36.6800, lng: 126.8502 },
+
+  "전북 완주군": { lat: 35.9040, lng: 127.1623 },
+  "전북 익산시": { lat: 35.9483, lng: 126.9571 },
+  "전북 임실군": { lat: 35.6164, lng: 127.2894 },
+
+  "전남 여수시": { lat: 34.7604, lng: 127.6622 },
+  "전남 영광군": { lat: 35.2779, lng: 126.5143 },
+  "전남 영암군": { lat: 34.7972, lng: 126.6960 },
+  "전남 완도군": { lat: 34.3116, lng: 126.7557 },
+
+  "경북 영덕군": { lat: 36.4157, lng: 129.3658 },
+  "경북 영양군": { lat: 36.6665, lng: 129.1166 },
+  "경북 영주시": { lat: 36.8057, lng: 128.6247 },
+  "경북 영천시": { lat: 35.9733, lng: 128.9389 },
+  "경북 예천군": { lat: 36.6578, lng: 128.4526 },
+  "경북 울릉군": { lat: 37.5053, lng: 130.8606 },
+  "경북 울진군": { lat: 36.9931, lng: 129.4005 },
+  "경북 의성군": { lat: 36.3522, lng: 128.6976 },
+
+  "경남 양산시": { lat: 35.3350, lng: 129.0370 },
+
+  // ---------------------------------------------------------------
+  // 8) 'ㅈ' 그룹
+  // ---------------------------------------------------------------
+  "서울 종로구": { lat: 37.5729, lng: 126.9794 },
+  "서울 중구": { lat: 37.5575, lng: 126.9970 },
+  "서울 중랑구": { lat: 37.6063, lng: 127.0928 },
+
+  "부산 중구": { lat: 35.1060, lng: 129.0326 },
+  "대구 중구": { lat: 35.8696, lng: 128.5913 },
+  "인천 중구": { lat: 37.4736, lng: 126.6213 },
+  "대전 중구": { lat: 36.3010, lng: 127.4197 },
+  "울산 중구": { lat: 35.5666, lng: 129.3328 },
+
+  "제주 제주시": { lat: 33.4996, lng: 126.5312 },
+
+  "충북 증평군": { lat: 36.7855, lng: 127.5825 },
+  "충북 진천군": { lat: 36.8551, lng: 127.4356 },
+
+  "전북 전주시 덕진구": { lat: 35.8423, lng: 127.1249 },
+  "전북 전주시 완산구": { lat: 35.8137, lng: 127.1212 },
+  "전북 정읍시": { lat: 35.5693, lng: 126.8555 },
+  "전북 진안군": { lat: 35.7910, lng: 127.4240 },
+
+  "전남 장성군": { lat: 35.3013, lng: 126.7843 },
+  "전남 장흥군": { lat: 34.6819, lng: 126.9077 },
+  "전남 진도군": { lat: 34.4830, lng: 126.2633 },
+
+  "경남 진주시": { lat: 35.1802, lng: 128.1076 },
+  "경남 창원시 진해구": { lat: 35.1411, lng: 128.6965 },
+
+  // ---------------------------------------------------------------
+  // 9) 'ㅊ' 그룹
+  // ---------------------------------------------------------------
+  "강원 철원군": { lat: 38.1463, lng: 127.3137 },
+  "강원 춘천시": { lat: 37.8813, lng: 127.7298 },
+
+  "충북 청주시 청원구": { lat: 36.7096, lng: 127.5117 },
+  "충북 청주시 흥덕구": { lat: 36.6372, lng: 127.4620 },
+  "충주시": { lat: 36.9910, lng: 127.9253 },
+
+  "충남 천안시 동남구": { lat: 36.7848, lng: 127.1607 },
+  "충남 천안시 서북구": { lat: 36.8159, lng: 127.1139 },
+  "충남 청양군": { lat: 36.4593, lng: 126.8022 },
+
+  "경북 청도군": { lat: 35.6471, lng: 128.7357 },
+  "경북 청송군": { lat: 36.4359, lng: 129.0571 },
+  "경북 칠곡군": { lat: 36.0151, lng: 128.4006 },
+
+  "경남 창녕군": { lat: 35.5439, lng: 128.4923 },
+  "경남 창원시 마산합포구": { lat: 35.2039, lng: 128.5669 },
+  "경남 창원시 마산회원구": { lat: 35.2273, lng: 128.5832 },
+  "경남 창원시 성산구": { lat: 35.2186, lng: 128.6808 },
+  "경남 창원시 의창구": { lat: 35.2546, lng: 128.6096 },
+  "경남 창원시 진해구": { lat: 35.1397, lng: 128.7021 },
+
+  // ---------------------------------------------------------------
+  // 10) 'ㅍ' 그룹
+  // ---------------------------------------------------------------
+  "경북 포항시 남구": { lat: 35.9679, lng: 129.3650 },
+  "경북 포항시 북구": { lat: 36.0328, lng: 129.3652 },
+  "강원 평창군": { lat: 37.3704, lng: 128.3902 },
+
+  // ---------------------------------------------------------------
+  // 11) 'ㅎ' 그룹
+  // ---------------------------------------------------------------
+  "경기 하남시": { lat: 37.5393, lng: 127.2149 },
+  "경기 화성시": { lat: 37.1996, lng: 126.8316 },
+
+  "강원 홍천군": { lat: 37.6973, lng: 127.8887 },
+  "강원 화천군": { lat: 38.1062, lng: 127.7084 },
+  "강원 횡성군": { lat: 37.4885, lng: 127.9847 },
+
+  "충남 홍성군": { lat: 36.6012, lng: 126.6608 },
+  "전남 해남군": { lat: 34.5711, lng: 126.5982 },
+  "전남 함평군": { lat: 35.0645, lng: 126.5167 },
+
+  "경남 하동군": { lat: 35.0673, lng: 127.7515 },
+  "경남 함안군": { lat: 35.2727, lng: 128.4061 },
+  "경남 함양군": { lat: 35.5206, lng: 127.7257 },
+  "경남 합천군": { lat: 35.5662, lng: 128.1656 }
+};
+
+
+// -------------------------------------------
+// (G) 추천된 지역들에 대해 지도에 마커 찍기
+// -------------------------------------------
+function placeMarkers(){
+  // 1) 기존 마커 제거
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+
+  // 2) 추천 목록을 순회하며 cityCenters를 찾고 마커 생성
+  recommendation.cities.forEach(c => {
+    let cityName = c.name;
+    if(cityCenters[cityName]) {
+      const { lat, lng } = cityCenters[cityName];
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map,
+        title: cityName
+      });
+
+      // 간단한 InfoWindow
+      const infoWin = new google.maps.InfoWindow({
+        content: `<b>${cityName}</b><br/>점수: ${c.score}`
+      });
+      marker.addListener('click', () => {
+        infoWin.open(map, marker);
+      });
+
+      markers.push(marker);
+    }
+  });
+}
+
+// -------------------------------------------
+// (H) 유틸 함수: 숫자 각 자리 합
+// -------------------------------------------
 function sumDigits(num) {
   let s = String(num), sum=0;
   for (let c of s) {
@@ -198,22 +642,21 @@ function sumDigits(num) {
   return sum;
 }
 
-// -----------------------
-// (B) 사주값 계산
-// -----------------------
+// -------------------------------------------
+// (I) 사주값 계산 로직 (예시)
+// -------------------------------------------
 function calcSajuValue(y, m, d) {
   if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
   let total = y + m + d;
 
-  // 제공된 로직
   if(total < 2000) {
     let str = String(total).padStart(4,"0");
-    let f2 = parseInt(str.substr(0,2),10); // 앞 2자리
-    let b2 = parseInt(str.substr(2,2),10); // 뒤 2자리
+    let f2 = parseInt(str.substr(0,2),10);
+    let b2 = parseInt(str.substr(2,2),10);
     let sf = sumDigits(f2);
     let sb = sumDigits(b2);
     let fv = sb;
-    let combine = parseInt(String(sf)+String(sb),10); 
+    let combine = parseInt(String(sf)+String(sb),10);
     let sv = sumDigits(combine);
     return { total, firstVal: fv, secondVal: sv };
   } else {
@@ -224,12 +667,12 @@ function calcSajuValue(y, m, d) {
   }
 }
 
-// -----------------------
-// (C) 이름→사주번호 매핑 정보
-// -----------------------
+// -------------------------------------------
+// (J) 이름→사주번호 매핑 (예시)
+//     실제 로직에 맞춰 수정/확장 가능
+// -------------------------------------------
 const nameToNumberMap = {
   '은': 2,
-
   // 3번
   '민': 3, '임': 3, '노': 3, '모': 3, '삼': 3, '묵': 3,
   '문': 3, '미': 3, '누': 3, '흠': 3, '움': 3, '점': 3,
@@ -237,7 +680,6 @@ const nameToNumberMap = {
   '나': 3, '남': 3, '마': 3, '명': 3, '목': 3,
   '김': 3, '금': 3, '막': 3, '봄': 3, '내': 3,
   '낭': 3, '담': 3, '첨': 3, '견': 3, '곤': 3,
-
   // 4번
   '석': 4, '로': 4, '학': 4, '슬': 4,
   '라': 4, '종': 4, '루': 4, '일': 4,
@@ -245,7 +687,6 @@ const nameToNumberMap = {
   '소': 4, '리': 4, '말': 4, '란': 4,
   '숙': 4, '근': 4, '솔': 4, '순': 4,
   '람': 4, '론': 4,
-
   // 5번
   '태': 5, '택': 5, '규': 5, '분': 5, '돔': 5, '던': 5,
   '만': 5, '엽': 5, '평': 5, '효': 5, '훈': 5, '도': 5,
@@ -254,16 +695,13 @@ const nameToNumberMap = {
   '돈': 5, '두': 5, '갑': 5, '당': 5, '딘': 5, '후': 5,
   '욱': 5, '팽': 5, '피': 5, '닷': 5, '타': 5, '탐': 5,
   '파': 5, '판': 5,
-
   // 6번
   '정': 6,
-
   // 7번
   '최': 7, '동': 7, '차': 7, '추': 7, '건': 7,
   '채': 7, '화': 7, '좌': 7, '찬': 7, '하': 7, '준': 7,
   '주': 7, '철': 7, '수': 7, '찰': 7, '춘': 7, '청': 7,
   '척': 7, '카': 7,
-
   // 8번
   '박': 8, '가': 8, '혜': 8, '늘': 8, '호': 8, '해': 8, '예': 8,
   '중': 8, '강': 8, '율': 8, '용': 8, '송': 8, '응': 8, '사': 8,
@@ -272,28 +710,25 @@ const nameToNumberMap = {
   '영': 8, '범': 8, '고': 8, '배': 8, '랑': 8, '빛': 8, '결': 8,
   '복': 8, '환': 8, '인': 8, '란': 8, '빈': 8, '완': 8, '린': 8,
   '극': 8, '본': 8, '벼': 8, '의': 8, '검': 8, '황': 8,
-
   // 9번
   '순': 9, '서': 9, '선': 9, '여': 9, '녀': 9, '존': 9, '회': 9,
   '지': 9, '향': 9, '장': 9, '제': 9, '심': 9, '재': 9, '성': 9,
   '자': 9, '기': 9, '실': 9, '어': 9, '희': 9, '홍': 9, '유': 9,
   '우': 9, '언': 9, '귀': 9, '설': 9, '길': 9, '행': 9, '휴': 9,
   '헌': 9, '잠': 9, '허': 9, '갈': 9, '연': 9, '진': 9, '항': 9,
-  '션': 9, '직': 9, '숀': 9, '요': 9, '이': 9, '주': 9, '철': 9, '류': 9,
-
+  '션': 9, '직': 9, '숀': 9, '요': 9, '이': 9, '류': 9,
   // 10번
   '안': 10, '윤': 10, '원': 10, '전': 10, '온': 10, '한': 10,
   '손': 10, '련': 10,
-
   // 11번
   '현': 11, '경': 11, '신': 11, '염': 11, '키': 11, '창': 11,
   '간': 11, '천': 11, '세': 11, '감': 11, '품': 11, '위': 11,
   '균': 11, '총': 11, '휘': 11, '시': 11, '필': 11
 };
 
-// -----------------------
-// (D) 숫자→초성 + (추가) 요소/방향 매핑
-// -----------------------
+// -------------------------------------------
+// (K) 각 숫자(2~11)에 해당하는 초성→도시 매핑 (일부)
+// -------------------------------------------
 const locationMap = {
   2: { consonants: ['ㄱ','ㄴ','ㅇ'], element:'물' },
   3: { consonants: ['ㄴ','ㄷ','ㅁ','ㅂ'], element:'언덕' },
@@ -307,82 +742,45 @@ const locationMap = {
   11:{ consonants: ['ㄱ','ㄴ','ㅂ','ㅅ'] }
 };
 
-// -----------------------
-// (E) 초성→도시데이터
-//  - 괄호로 구분되던 지역을 '부산 강서구'처럼 앞에 광역/도시명을 붙여 구분
-//  - 예) 강서구 -> 서울 강서구, 강서구(부산) -> 부산 강서구
-// -----------------------
+// -------------------------------------------
+// (L) 초성별 실제 도시/구 이름
+//     (GeoJSON의 SIG_KOR_NM과 맞추기)
+// -------------------------------------------
 const cityData = {
   'ㄱ': [
-    // 서울 강...들
     '서울 강남구','서울 강동구','서울 강북구','서울 강서구','서울 관악구','서울 광진구','서울 구로구','서울 금천구',
-    // 부산 강서구
-    '부산 강서구','부산 금정구','부산 기장군',
-    // 대구 군위군 -> "대구 군위군" (실제 현재로는 경북 소속이나 행정변경 언급된 지역)
-    '대구 군위군',
-    // 경북 군위군(기존 표기) -> "경북 군위군"
-    '경북 군위군',
-    '인천 강화군','인천 계양구','광주 광산구',
+    '부산 강서구','부산 금정구','부산 기장군','대구 군위군','경북 군위군','인천 강화군','인천 계양구','광주 광산구',
     '경기 가평군','경기 고양시 덕양구','경기 고양시 일산동구','경기 고양시 일산서구',
     '경기 과천시','경기 광명시','경기 광주시','경기 구리시','경기 군포시','경기 김포시',
     '강원 강릉시','강원 고성군','충북 괴산군','충남 공주시','충남 금산군','전북 고창군','전북 군산시','전북 김제시',
-    '전남 강진군','전남 고흥군','전남 곡성군','전남 광양시','전남 구례군','경북 경산시','경북 경주시','경북 고령군',
-    '경북 구미시','경남 거제시','경남 거창군','경남 고성군','경남 김해시'
+    '전남 강진군','전남 고흥군','전남 곡성군','전남 광양시','전남 구례군',
+    '경북 경산시','경북 경주시','경북 고령군','경북 구미시',
+    '경남 거제시','경남 거창군','경남 고성군','경남 김해시'
   ],
   'ㄴ': [
-    '서울 노원구',
-    '경기 남양주시','전북 남원시','전남 나주시','경남 남해군'
+    '서울 노원구','경기 남양주시','전북 남원시','전남 나주시','경남 남해군'
   ],
   'ㄷ': [
     '서울 도봉구','서울 동대문구','서울 동작구',
-    // 부산 동구(부산) -> "부산 동구"
-    '부산 동구',
-    '부산 동래구',
-    // 대구 동구(대구) -> "대구 동구"
-    '대구 동구',
-    '대구 달서구','대구 달성군',
-    // 인천 동구(인천) -> "인천 동구"
-    '인천 동구',
-    // 광주 동구(광주) -> "광주 동구"
-    '광주 동구',
-    // 대전 동구(대전) -> "대전 동구"
-    '대전 동구',
-    // 울산 동구(울산) -> "울산 동구"
-    '울산 동구',
+    '부산 동구','부산 동래구','대구 동구','대구 달서구','대구 달성군',
+    '인천 동구','광주 동구','대전 동구','울산 동구',
     '충남 당진시','충북 단양군','전남 담양군'
   ],
   'ㅁ': [
     '서울 마포구','경남 밀양시','전남 목포시','전남 무안군','전북 무주군'
   ],
   'ㅂ': [
-    '부산 부산진구',
-    // 부산 북구(부산) -> "부산 북구"
-    '부산 북구',
-    '인천 부평구',
-    // 대구 북구(대구) -> "대구 북구"
-    '대구 북구',
-    // 광주 북구(광주) -> "광주 북구"
-    '광주 북구',
-    // 울산 북구(울산) -> "울산 북구"
-    '울산 북구',
+    '부산 부산진구','부산 북구','인천 부평구','대구 북구','광주 북구','울산 북구',
     '충북 보은군','충남 보령시','충남 부여군','경북 봉화군'
   ],
   'ㅅ': [
     '서울 서대문구','서울 서초구','서울 성동구','서울 성북구','서울 송파구',
-    // 부산 사상구, 사하구, 서구(부산) -> "부산 서구"
     '부산 사상구','부산 사하구','부산 서구',
-    // 대구 서구(대구) -> "대구 서구"
-    '대구 서구',
-    // 인천 서구(인천) -> "인천 서구"
-    '인천 서구',
-    // 울산 서구(울산) - 실제 울산은 "남구"·"중구"·"동구"·"북구"만 존재. 서구는 없으므로 생략
-    // ...
-    '대구 수성구',
+    '대구 서구','인천 서구','대구 수성구',
     '경기 성남시 분당구','경기 성남시 수정구','경기 성남시 중원구',
     '경기 수원시 권선구','경기 수원시 영통구','경기 수원시 장안구','경기 수원시 팔달구','경기 시흥시',
     '강원 삼척시','강원 속초시',
-    '충북 서원구','충북 상당구', // (청주시 하위 구) 실제론 "청주시 서원구", "청주시 상당구" 등
-    '충남 서산시','충남 서천군','전북 순창군','전남 순천시',
+    '충북 서원구','충북 상당구','충남 서산시','충남 서천군','전북 순창군','전남 순천시',
     '경북 상주시','경북 성주군','경남 사천시','경남 산청군'
   ],
   'ㅇ': [
@@ -400,16 +798,7 @@ const cityData = {
   ],
   'ㅈ': [
     '서울 종로구','서울 중구','서울 중랑구',
-    // 부산 중구(부산) -> "부산 중구"
-    '부산 중구',
-    // 대구 중구(대구) -> "대구 중구"
-    '대구 중구',
-    // 인천 중구(인천) -> "인천 중구"
-    '인천 중구',
-    // 대전 중구(대전) -> "대전 중구"
-    '대전 중구',
-    // 울산 중구(울산) -> "울산 중구"
-    '울산 중구',
+    '부산 중구','대구 중구','인천 중구','대전 중구','울산 중구',
     '제주 제주시','충북 증평군','충북 진천군',
     '전북 전주시 덕진구','전북 전주시 완산구','전북 정읍시','전북 진안군',
     '전남 장성군','전남 장흥군','전남 진도군',
@@ -417,11 +806,8 @@ const cityData = {
   ],
   'ㅊ': [
     '강원 철원군','강원 춘천시',
-    // 청주 -> '청주시 상당구','청주시 서원구','청주시 청원구','청주시 흥덕구'
-    '충북 청주시 청원구','충북 청주시 흥덕구','충주시',
-    '충남 천안시 동남구','충남 천안시 서북구','충남 청양군',
-    '경북 청도군','경북 청송군','경북 칠곡군',
-    '경남 창녕군',
+    '충북 청주시 청원구','충북 청주시 흥덕구','충주시','충남 천안시 동남구','충남 천안시 서북구','충남 청양군',
+    '경북 청도군','경북 청송군','경북 칠곡군','경남 창녕군',
     '경남 창원시 마산합포구','경남 창원시 마산회원구','경남 창원시 성산구','경남 창원시 의창구','경남 창원시 진해구'
   ],
   'ㅍ': [
@@ -435,46 +821,44 @@ const cityData = {
   ]
 };
 
-// -----------------------
-// (F) 추천 도시 함수 (가중치 적용, 상위 30개)
-// -----------------------
+// -------------------------------------------
+// (M) 가중치 기반 추천 (상위 30)
+// -------------------------------------------
 function getRecommendedCitiesForNumbers(numbers) {
-  // 1) numbers 배열의 등장 횟수(가중치) 계산
-  const freq = new Map(); // number -> count
+  // (1) 숫자 등장 횟수
+  const freq = new Map();
   numbers.forEach(n => {
     freq.set(n, (freq.get(n)||0)+1);
   });
 
-  // 2) city별 점수
+  // (2) city별 점수
   const allCities = new Map();
   let elements = new Set();
 
-  // 각 distinct 숫자 순회
   for (let [num, count] of freq.entries()) {
     const locInfo = locationMap[num];
-    if(!locInfo) continue; // 매핑에 없는 숫자이면 무시
+    if(!locInfo) continue;
 
-    // 요소/방향(예: 물, 언덕, 북쪽 등) 모으기
+    // 예) element: '물', '언덕' 등
     if(locInfo.element){
       elements.add(locInfo.element);
     }
 
-    // 해당 숫자가 count번 등장 -> city 점수도 count만큼 증가
     locInfo.consonants.forEach(consonant => {
-      if(cityData[consonant]){
+      if(cityData[consonant]) {
         cityData[consonant].forEach(city => {
-          const currentScore = allCities.get(city)||0;
-          allCities.set(city, currentScore + count);
+          const curr = allCities.get(city) || 0;
+          allCities.set(city, curr + count);
         });
       }
     });
   }
 
-  // 3) 점수 순 정렬 -> 상위 30개
+  // (3) 점수 높은 순 정렬 → 상위 30
   const sorted = Array.from(allCities.entries())
-    .sort((a,b)=>b[1]-a[1])
+    .sort((a,b)=> b[1] - a[1])
     .slice(0,30)
-    .map(([name,score]) => ({name,score}));
+    .map(([name,score])=> ({ name, score }));
 
   return {
     cities: sorted,
@@ -482,9 +866,9 @@ function getRecommendedCitiesForNumbers(numbers) {
   };
 }
 
-// -----------------------
-// (G) 메인 로직
-// -----------------------
+// -------------------------------------------
+// (N) 메인: 수비학 계산 + 지도 반영
+// -------------------------------------------
 function calculateAndRecommend(){
   const fullName = document.getElementById('fullName').value.trim();
 
@@ -502,19 +886,19 @@ function calculateAndRecommend(){
   const resultDiv = document.getElementById('result');
 
   // 초기화
-  errorDiv.style.display='none'; 
+  errorDiv.style.display='none';
   errorDiv.textContent='';
-  resultDiv.classList.remove('show'); 
+  resultDiv.classList.remove('show');
   resultDiv.innerHTML='';
 
-  // (1) 이름 검증
-  if(!fullName){
-    errorDiv.textContent='이름을 입력해주세요.';
+  // (1) 이름 필수
+  if(!fullName) {
+    errorDiv.textContent = '이름을 입력해주세요.';
     errorDiv.style.display='block';
     return;
   }
 
-  // (2) 이름 사주번호(부분 매핑)
+  // (2) 이름→숫자 매핑
   const chars = fullName.split('');
   let mappedNumbers = [];
   let mappedNameHTML = chars.map(ch => {
@@ -522,60 +906,61 @@ function calculateAndRecommend(){
       mappedNumbers.push(nameToNumberMap[ch]);
       return `<div class="saju-badge">${ch} → <span>${nameToNumberMap[ch]}</span></div>`;
     } else {
-      return `<div class="saju-badge">${ch} → <span>번호가 없는 글자</span></div>`;
+      return `<div class="saju-badge">${ch} → <span>번호 없음</span></div>`;
     }
   }).join('');
 
-  // (3) 양력 혹은 음력 중 최소 하나는 완전히 입력되었는지 검증
-  if(
-    (isNaN(yearSolar)||isNaN(monthSolar)||isNaN(daySolar)) &&
-    (isNaN(yearLunar)||isNaN(monthLunar)||isNaN(dayLunar))
-  ){
-    errorDiv.textContent='양력 또는 음력 생년월일 중 최소 하나를 완전히 입력해주세요.';
+  // (3) 양력/음력 중 최소 하나 완전 입력?
+  const hasSolar = (!isNaN(yearSolar) && !isNaN(monthSolar) && !isNaN(daySolar));
+  const hasLunar = (!isNaN(yearLunar) && !isNaN(monthLunar) && !isNaN(dayLunar));
+  if(!hasSolar && !hasLunar) {
+    errorDiv.textContent='양력 또는 음력 생년월일 중 하나는 제대로 입력해주세요.';
     errorDiv.style.display='block';
     return;
   }
 
-  // (4) 양력·음력 계산
-  let solar = null;
-  if(!isNaN(yearSolar) && !isNaN(monthSolar) && !isNaN(daySolar)){
-    solar = calcSajuValue(yearSolar, monthSolar, daySolar);
-  }
-  let lunar = null;
-  if(!isNaN(yearLunar) && !isNaN(monthLunar) && !isNaN(dayLunar)){
-    lunar = calcSajuValue(yearLunar, monthLunar, dayLunar);
-  }
-  if(!solar && !lunar){
-    errorDiv.textContent='양력 또는 음력 생년월일이 유효하지 않습니다.';
+  // (4) 사주값 계산
+  let solar = hasSolar ? calcSajuValue(yearSolar, monthSolar, daySolar) : null;
+  let lunar = hasLunar ? calcSajuValue(yearLunar, monthLunar, dayLunar) : null;
+  if(!solar && !lunar) {
+    errorDiv.textContent='입력된 생년월일이 유효하지 않아 계산할 수 없습니다.';
     errorDiv.style.display='block';
     return;
   }
 
-  // (5) 최종 추천 계산용 배열
+  // (5) 최종 분석할 숫자
   let allNumbers = [...mappedNumbers];
-  if(solar) {
-    allNumbers.push(solar.firstVal, solar.secondVal);
-  }
-  if(lunar) {
-    allNumbers.push(lunar.firstVal, lunar.secondVal);
-  }
+  if(solar) allNumbers.push(solar.firstVal, solar.secondVal);
+  if(lunar) allNumbers.push(lunar.firstVal, lunar.secondVal);
 
-  // (6) 추천
-  const recommendation = getRecommendedCitiesForNumbers(allNumbers);
+  // (6) 추천 계산
+  recommendation = getRecommendedCitiesForNumbers(allNumbers);
 
-  // (7) 결과 화면 표시
+  // (7) 결과 표시
   let solarText = solar
     ? `<div class="saju-badge">양력: <span>Total=${solar.total}</span> → <span>${solar.firstVal}, ${solar.secondVal}</span></div>`
-    : '<div class="saju-badge">양력 미입력 또는 계산 불가</div>';
+    : '<div class="saju-badge">양력 미입력/계산 불가</div>';
+
   let lunarText = lunar
     ? `<div class="saju-badge">음력: <span>Total=${lunar.total}</span> → <span>${lunar.firstVal}, ${lunar.secondVal}</span></div>`
-    : '<div class="saju-badge">음력 미입력 또는 계산 불가</div>';
+    : '<div class="saju-badge">음력 미입력/계산 불가</div>';
 
-  resultDiv.innerHTML=`
+  let directionText = '';
+  if (recommendation.elements.length > 0) {
+    directionText = `
+      <div class="section-title">추천 방향/환경</div>
+      <div>${recommendation.elements.join(', ')}</div>
+    `;
+  }
+
+  let cityListHTML = recommendation.cities.map(c => {
+    let percent = Math.min(c.score * 20, 100);
+    return `<div>${c.name} → 점수:${c.score}, 적합도:${percent}%</div>`;
+  }).join('');
+
+  resultDiv.innerHTML = `
     <div class="section-title">이름 글자별 매핑</div>
-    <div class="saju-numbers">
-      ${mappedNameHTML}
-    </div>
+    <div class="saju-numbers">${mappedNameHTML}</div>
 
     <div class="section-title">사주 번호 분석</div>
     <div class="saju-numbers">
@@ -583,29 +968,15 @@ function calculateAndRecommend(){
       ${lunarText}
     </div>
 
-    ${
-      recommendation.elements.length>0
-      ?`
-       <div class="section-title">추천 방향/환경</div>
-       <div class="recommendation-category">
-         ${recommendation.elements.join(', ')}
-       </div>
-       `
-      :''
-    }
+    ${directionText}
 
-    <div class="section-title">추천 지역</div>
-    <p class="info-text">* 점수가 높을수록 더 잘 맞는 지역입니다. (TOP 30)</p>
-    <div class="city-grid">
-      ${recommendation.cities.map(city=>`
-        <div class="city-card">
-          <div class="city-name">${city.name}</div>
-          <div class="score">적합도: ${Math.min(city.score*20,100)}%</div>
-        </div>
-      `).join('')}
-    </div>
+    <div class="section-title">추천 지역 Top 30</div>
+    ${cityListHTML}
   `;
   resultDiv.classList.add('show');
+
+  // (8) 지도 반영 (폴리곤 색 + 마커)
+  updateMapColors();
 }
 </script>
 </body>
